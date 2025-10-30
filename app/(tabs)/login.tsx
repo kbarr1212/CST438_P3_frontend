@@ -1,0 +1,305 @@
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Image,
+  Platform,
+  KeyboardAvoidingView,
+  ScrollView,
+} from "react-native";
+import { useRouter } from "expo-router";
+import * as WebBrowser from "expo-web-browser";
+import * as Google from "expo-auth-session/providers/google";
+import * as AppleAuthentication from "expo-apple-authentication";
+
+WebBrowser.maybeCompleteAuthSession();
+
+export default function LoginScreen() {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPasswordFields, setShowPasswordFields] = useState(false);
+  const [error, setError] = useState("");
+
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    androidClientId: "961378291358-7lbk7gaeuf4m9lps3qb567h8te5708a5.apps.googleusercontent.com",
+    webClientId: "961378291358-q862ql18vlqvshbo2fo6p1v51uib13r5.apps.googleusercontent.com",
+  });
+
+  const isValidEmail = (val: string) =>
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+
+  useEffect(() => {
+    if (isValidEmail(email)) {
+      setShowPasswordFields(true);
+    } else {
+      setShowPasswordFields(false);
+    }
+  }, [email]);
+
+  const handleContinue = () => {
+    if (showPasswordFields) {
+      if (password !== password) {
+        setError("Password does not match.");
+        return;
+      }
+      setError("");
+      console.log("Logging in:", { email, password });
+    } else {
+      console.log("Continue with email:", email);
+    }
+  };
+
+  useEffect(() => {
+    if (response?.type === "success") {
+      console.log("Google auth success:", response);
+    }
+  }, [response]);
+
+  return (
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      style={styles.outerContainer}
+    >
+      <ScrollView
+        contentContainerStyle={{ flexGrow: 1, justifyContent: "center" }}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.card}>
+          <Text style={styles.title}>Thrift Market ™</Text>
+
+          <Text style={styles.subtitle}>Log in</Text>
+          <Text style={styles.text}>Enter your email to Log in for this app</Text>
+
+          <TextInput
+            style={styles.input}
+            placeholder="email@domain.com"
+            placeholderTextColor="#999"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            value={email}
+            onChangeText={setEmail}
+          />
+
+          {showPasswordFields && (
+            <>
+              <TextInput
+                style={styles.input}
+                placeholder="Password"
+                placeholderTextColor="#999"
+                secureTextEntry
+                value={password}
+                onChangeText={setPassword}
+              />
+            </>
+          )}
+
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+          <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>
+            <Text style={styles.continueText}>
+              {showPasswordFields ? "Sign Up" : "Continue"}
+            </Text>
+          </TouchableOpacity>
+
+          <View style={styles.dividerContainer}>
+            <View style={styles.line} />
+            <Text style={styles.orText}>or</Text>
+            <View style={styles.line} />
+          </View>
+
+          <TouchableOpacity
+            style={styles.googleButton}
+            disabled={!request}
+            onPress={() => promptAsync()}
+          >
+            <Image
+              source={{
+                uri: "https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg",
+              }}
+              style={styles.icon}
+            />
+            <Text style={styles.thirdPartyText}>Continue with Google</Text>
+          </TouchableOpacity>
+
+          {Platform.OS === "ios" && (
+            <AppleAuthentication.AppleAuthenticationButton
+              buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+              buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+              cornerRadius={10}
+              style={styles.appleButton}
+              onPress={async () => {
+                try {
+                  const credential = await AppleAuthentication.signInAsync({
+                    requestedScopes: [
+                      AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+                      AppleAuthentication.AppleAuthenticationScope.EMAIL,
+                    ],
+                  });
+                  console.log("Apple auth success:", credential);
+                } catch (e: any) {
+                  if (e.code === "ERR_CANCELED") return;
+                  console.error(e);
+                }
+              }}
+            />
+          )}
+
+          <Text style={styles.terms}>
+            By clicking continue, you agree to our{" "}
+            <Text style={styles.link}>Terms of Service</Text> and{" "}
+            <Text style={styles.link}>Privacy Policy</Text>.
+          </Text>
+        <View style={styles.bottomRow}>
+          <Text style={styles.bottomText}>Don't have an account? </Text>
+          <TouchableOpacity onPress={() => router.push("/signup")}>
+          <Text style={styles.bottomLink}>Sign Up</Text>
+  </TouchableOpacity>
+        </View>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+}
+
+const styles = StyleSheet.create({
+  outerContainer: {
+    flex: 1,
+    backgroundColor: "#2979FF",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 24,
+  },
+  card: {
+    backgroundColor: "#fff",
+    borderRadius: 24,
+    width: "100%",
+    maxWidth: 420,
+    padding: 24,
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
+    alignItems: "center",
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: "700",
+    color: "#2979FF",
+    marginBottom: 16,
+  },
+  subtitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#000",
+  },
+  text: {
+    fontSize: 14,
+    color: "#555",
+    marginBottom: 16,
+  },
+  input: {
+    backgroundColor: "#f3f3f3",
+    width: "100%",
+    height: 50,
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    fontSize: 16,
+    marginBottom: 12,
+  },
+  continueButton: {
+    backgroundColor: "#2979FF",
+    width: "100%",
+    height: 50,
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 4,
+  },
+  continueText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  dividerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 20,
+    width: "100%",
+  },
+  line: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "#ddd",
+  },
+  orText: {
+    marginHorizontal: 10,
+    color: "#666",
+    fontWeight: "600",
+  },
+  googleButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 10,
+    width: "100%",
+    height: 50,
+    justifyContent: "center",
+    marginBottom: 12,
+  },
+  icon: {
+    width: 20,
+    height: 20,
+    marginRight: 8,
+  },
+  thirdPartyText: {
+    fontSize: 16,
+    color: "#000",
+    fontWeight: "500",
+  },
+  appleButton: {
+    width: "100%",
+    height: 50,
+    borderRadius: 10,
+    marginBottom: 16,
+  },
+  terms: {
+    fontSize: 12,
+    color: "#000",
+    textAlign: "center",
+    marginTop: 8,
+    width: "90%",
+  },
+  link: {
+    color: "#2979FF",
+    textDecorationLine: "underline",
+    fontWeight: "600",
+  },
+  errorText: {
+    color: "red",
+    fontSize: 13,
+    marginBottom: 8,
+  },
+  bottomRow: {
+  flexDirection: "row",
+  justifyContent: "center",
+  alignItems: "center",
+  marginTop: 16,
+  },
+  bottomText: {
+  fontSize: 14,
+  color: "#000",
+  },
+  bottomLink: {
+  fontSize: 14,
+  fontWeight: "600",
+  color: "#2979FF",
+  textDecorationLine: "underline",
+},
+});
