@@ -96,7 +96,7 @@ export default function SignupScreen() {
       style={styles.outerContainer}
     >
       <ScrollView
-        contentContainerStyle={{ flexGrow: 1, justifyContent: "center" }}
+        contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.card}>
@@ -204,8 +204,8 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: "#fff",
     borderRadius: 24,
-    width: "100%",
-    maxWidth: 420,
+    width: "90%",
+    alignSelf: "center",
     padding: 24,
     shadowColor: "#000",
     shadowOpacity: 0.15,
@@ -338,5 +338,10 @@ githubButtonText: {
   fontWeight: "600",
   color: "#2979FF",
   textDecorationLine: "underline",
+},
+scrollContent: {
+  flexGrow: 1,
+  justifyContent: "center",
+  paddingVertical: 40,
 },
 });
