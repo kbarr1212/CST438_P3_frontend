@@ -50,7 +50,7 @@ export default function MarketplaceScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 24,
+    paddingTop: 50,
     paddingHorizontal: 16,
   },
   title: {
@@ -71,7 +71,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   filterButtonSelected: {
-    backgroundColor: '#000',
+    backgroundColor: '#1b0a6fff',
   },
   filterText: {
     fontSize: 16,

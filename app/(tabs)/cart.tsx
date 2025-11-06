@@ -4,7 +4,8 @@ import { StyleSheet, Text, View } from 'react-native';
 export default function HomeScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>Cart</Text>
+      <Text style={styles.title}>Cart</Text>
+      <Text>Cart is currently empty.</Text>
     </View>
   );
 }
@@ -12,11 +13,13 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    paddingTop: 50,
+    paddingHorizontal: 16,
   },
-  text: {
-    fontSize: 24,
+  title: {
+    fontSize: 25,
     fontWeight: '600',
+    marginBottom: 20,
+    marginTop: 20,
   },
 });
