@@ -1,19 +1,19 @@
-import React, { useState, useEffect } from "react";
+import { makeRedirectUri, useAuthRequest } from "expo-auth-session";
+import * as Google from "expo-auth-session/providers/google";
+import { useRouter } from "expo-router";
+import * as WebBrowser from "expo-web-browser";
+import React, { useEffect, useState } from "react";
 import {
-  View,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  Image,
-  Platform,
-  KeyboardAvoidingView,
-  ScrollView,
+  View,
 } from "react-native";
-import { useRouter } from "expo-router";
-import * as WebBrowser from "expo-web-browser";
-import * as Google from "expo-auth-session/providers/google";
-import * as AppleAuthentication from "expo-apple-authentication";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -28,6 +28,23 @@ export default function LoginScreen() {
     androidClientId: "961378291358-7lbk7gaeuf4m9lps3qb567h8te5708a5.apps.googleusercontent.com",
     webClientId: "961378291358-q862ql18vlqvshbo2fo6p1v51uib13r5.apps.googleusercontent.com",
   });
+
+  const discovery = {
+      authorizationEndpoint: 'https://github.com/login/oauth/authorize',
+      tokenEndpoint: 'https://github.com/login/oauth/access_token',
+    };
+  
+    const [githubRequest, githubResponse, githubPromptAsync] = useAuthRequest(
+    {
+      clientId: process.env.EXPO_PUBLIC_GITHUB_CLIENT_ID!, 
+      scopes: ["read:user", "user:email"],
+      redirectUri: makeRedirectUri({
+        scheme: "thriftmarket", 
+      }),
+    },
+    discovery
+  );
+  
 
   const isValidEmail = (val: string) =>
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
@@ -125,28 +142,17 @@ export default function LoginScreen() {
             <Text style={styles.thirdPartyText}>Continue with Google</Text>
           </TouchableOpacity>
 
-          {Platform.OS === "ios" && (
-            <AppleAuthentication.AppleAuthenticationButton
-              buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-              buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-              cornerRadius={10}
-              style={styles.appleButton}
-              onPress={async () => {
-                try {
-                  const credential = await AppleAuthentication.signInAsync({
-                    requestedScopes: [
-                      AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-                      AppleAuthentication.AppleAuthenticationScope.EMAIL,
-                    ],
-                  });
-                  console.log("Apple auth success:", credential);
-                } catch (e: any) {
-                  if (e.code === "ERR_CANCELED") return;
-                  console.error(e);
-                }
-              }}
+          <TouchableOpacity
+            style={styles.githubButton}
+            disabled={!githubRequest}
+            onPress={() => githubPromptAsync()}
+          >
+            <Image
+              source={{ uri: "https://img.icons8.com/ios11/512/FFFFFF/github.png" }}
+              style={styles.icon}
             />
-          )}
+            <Text style={styles.githubButtonText}>Continue with GitHub</Text>
+          </TouchableOpacity>
 
           <Text style={styles.terms}>
             By clicking continue, you agree to our{" "}
@@ -263,12 +269,21 @@ const styles = StyleSheet.create({
     color: "#000",
     fontWeight: "500",
   },
-  appleButton: {
-    width: "100%",
-    height: 50,
-    borderRadius: 10,
-    marginBottom: 16,
-  },
+  githubButton: {
+  flexDirection: "row",
+  alignItems: "center",
+  backgroundColor: "#24292f",
+  borderRadius: 10,
+  width: "100%",
+  height: 50,
+  justifyContent: "center",
+  marginBottom: 12,
+},
+githubButtonText: {
+  fontSize: 16,
+  color: "#fff",
+  fontWeight: "500",
+},
   terms: {
     fontSize: 12,
     color: "#000",
