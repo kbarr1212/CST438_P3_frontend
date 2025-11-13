@@ -17,6 +17,8 @@ import {
 
 WebBrowser.maybeCompleteAuthSession();
 
+const API_BASE_URL = "http://localhost:8080/api/auth"
+
 export default function LoginScreen() {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -57,18 +59,40 @@ export default function LoginScreen() {
     }
   }, [email]);
 
-  const handleContinue = () => {
-    if (showPasswordFields) {
-      if (password !== password) {
-        setError("Password does not match.");
+  const handleContinue = async () => {
+  if (showPasswordFields) {
+    if (!password) {
+      setError("Please enter your password.");
+      return;
+    }
+
+    setError("");
+
+    try {
+      const response = await fetch("http://localhost:8080/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data);
         return;
       }
-      setError("");
-      console.log("Logging in:", { email, password });
-    } else {
-      console.log("Continue with email:", email);
+
+      console.log("Login success:", data);
+      alert("Logged in successfully!");
+      router.push("/marketplace"); 
+    } catch (err) {
+      console.error("Login error:", err);
+      setError("Something went wrong. Please try again later.");
     }
-  };
+  } else {
+    console.log("Continue with email:", email);
+  }
+};
 
   useEffect(() => {
     if (response?.type === "success") {
@@ -118,7 +142,7 @@ export default function LoginScreen() {
 
           <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>
             <Text style={styles.continueText}>
-              {showPasswordFields ? "Sign Up" : "Continue"}
+              {showPasswordFields ? "Log in" : "Continue"}
             </Text>
           </TouchableOpacity>
 
