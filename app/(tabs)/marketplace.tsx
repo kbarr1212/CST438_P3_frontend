@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View, FlatList, ActivityIndicator,} from 'react-native';
+import { marketplaceStyles as styles } from '../../components/ui/style';
 
 type Item = { id: number; title: string; description: string;};
 
@@ -98,74 +99,3 @@ export default function MarketplaceScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingTop: 50,
-    paddingHorizontal: 16,
-  },
-  title: {
-    fontSize: 25,
-    fontWeight: '600',
-    marginBottom: 20,
-    marginTop: 20,
-  },
-  filtersRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 16,
-  },
-  filterButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    backgroundColor: '#eee',
-    borderRadius: 20,
-  },
-  filterButtonSelected: {
-    backgroundColor: '#1b0a6fff',
-  },
-  filterText: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  filterTextSelected: {
-    color: '#fff',
-  },
-  gridRow: {
-    justifyContent: 'flex-start',
-    gap: 12,
-    marginBottom: 18,
-  },
-  card: {
-    width: '30%',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 10,
-    marginBottom: 10,
-    alignItems: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-  },
-  imagePlaceholder: {
-    width: '100%',
-    height: 80,
-    backgroundColor: '#e2e2e2',
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  cardTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  cardDescription: {
-    fontSize: 12,
-    color: '#555',
-    textAlign: 'center',
-    marginTop: 4,
-  },
-});
