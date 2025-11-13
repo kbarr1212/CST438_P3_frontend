@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
+import { marketplaceStyles as styles } from '../../components/ui/style';
 
 export default function MarketplaceScreen() {
   const [selected, setSelected] = useState<string | null>(null);
@@ -47,37 +48,3 @@ export default function MarketplaceScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingTop: 50,
-    paddingHorizontal: 16,
-  },
-  title: {
-    fontSize: 25,
-    fontWeight: '600',
-    marginBottom: 20,
-    marginTop: 20,
-  },
-  filtersRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 16,
-  },
-  filterButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    backgroundColor: '#eee',
-    borderRadius: 20,
-  },
-  filterButtonSelected: {
-    backgroundColor: '#1b0a6fff',
-  },
-  filterText: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  filterTextSelected: {
-    color: '#fff',
-  },
-});
