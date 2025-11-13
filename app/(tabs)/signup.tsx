@@ -17,6 +17,8 @@ import {
 
 WebBrowser.maybeCompleteAuthSession();
 
+const API_BASE_URL = "http://localhost:8080/api/auth"
+
 export default function SignupScreen() {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -67,22 +69,49 @@ export default function SignupScreen() {
   }
 }, [githubResponse]);
 
-  const handleContinue = () => {
-    if (showPasswordFields) {
-      if (!password || !confirmPassword) {
-        setError("Please enter both passwords.");
-        return;
-      }
-      if (password !== confirmPassword) {
-        setError("Passwords do not match.");
-        return;
-      }
-      setError("");
-      console.log("Signing up:", { email, password });
-    } else {
-      console.log("Continue with email:", email);
+ const handleContinue = async () => {
+  if (showPasswordFields) {
+    if (!password || !confirmPassword) {
+      setError("Please enter both passwords.");
+      return;
     }
-  };
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
+    setError("");
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/signup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        // Backend sends a message if signup fails
+        setError(data);
+        return;
+      }
+
+      console.log("Signup success:", data);
+      alert("Account created successfully!");
+      // navigate to login screen
+      router.push("/login"); 
+
+    } catch (err) {
+      console.error("Signup error:", err);
+      setError("Something went wrong. Please try again later.");
+    }
+  } else {
+    console.log("Continue with email:", email);
+  }
+};
+
 
   useEffect(() => {
     if (response?.type === "success") {
