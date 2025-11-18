@@ -1,8 +1,10 @@
+import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, Pressable, Text, View } from 'react-native';
 import { profileStyles as styles } from '../../components/ui/style';
 
 export default function ProfileScreen() {
+  const router = useRouter();
   const [active, setActive] = useState<'Listings' | 'Favorites'>('Listings');
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -55,7 +57,12 @@ export default function ProfileScreen() {
 
       <View style={styles.content}>
         {active === 'Listings' ? (
-          <Text style={styles.placeholder}>Listings content will appear here.</Text>
+          <View style={styles.content}>
+            <Text style={styles.placeholder}>Listings content will appear here.</Text>
+            <Pressable style={styles.addButton} onPress={() => router.push('/addListing')}>
+              <Text style={styles.addText}>+</Text>
+            </Pressable>
+          </View>
         ) : (
           <Text style={styles.placeholder}>Favorites content will appear here.</Text>
         )}

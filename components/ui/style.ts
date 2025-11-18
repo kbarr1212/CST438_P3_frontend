@@ -33,6 +33,45 @@ export const marketplaceStyles = StyleSheet.create({
   filterTextSelected: {
     color: '#fff',
   },
+
+  gridRow: {
+    justifyContent: 'flex-start',
+    gap: 12,
+    marginBottom: 18,
+  },
+  card: {
+    width: '30%',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 10,
+    marginBottom: 10,
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+  },
+  imagePlaceholder: {
+    width: '100%',
+    height: 80,
+    backgroundColor: '#e2e2e2',
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  cardTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  cardDescription: {
+    fontSize: 12,
+    color: '#555',
+    textAlign: 'center',
+    marginTop: 4,
+  },
+
   itemsRow: {
     flexDirection: 'row',
     gap: 8,
@@ -92,6 +131,7 @@ export const profileStyles = StyleSheet.create({
   },
   content: {
     paddingTop: 20,
+    alignItems: 'center',
   },
   placeholder: {
     color: '#444',
@@ -151,6 +191,23 @@ export const profileStyles = StyleSheet.create({
   menuItemText: {
     fontSize: 16,
   },
+  addButton: {
+    width: 48,
+    height: 48,
+    backgroundColor: '#1b0a6fff',
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 20,
+    elevation: 3,
+  },
+  addText: {
+    color: '#eee',
+    fontSize: 26,
+    fontWeight: '700',
+    lineHeight: 26,
+    textAlign: 'center',
+  },
 });
 
 export const cartStyles = StyleSheet.create({
@@ -164,5 +221,53 @@ export const cartStyles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 20,
     marginTop: 20,
+  },
+});
+
+export const addListingStyles = StyleSheet.create({
+  container: {
+    padding: 16,
+    backgroundColor: '#fff',
+  },
+  heading: {
+    fontSize: 20,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  field: {
+    marginBottom: 16,
+  },
+  label: {
+    marginBottom: 6,
+    color: '#222',
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#fafafa',
+  },
+  textArea: {
+    minHeight: 90,
+    textAlignVertical: 'top',
+  },
+  createButton: {
+    backgroundColor: '#1b0a6fff',
+    borderRadius: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 3,
+  },
+  createButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  actions: {
+    marginTop: 8,
   },
 });
