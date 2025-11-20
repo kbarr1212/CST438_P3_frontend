@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
+import * as ImagePicker from 'expo-image-picker';
 import { Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { addListingStyles as styles } from '../components/ui/style';
 
@@ -64,6 +65,10 @@ export default function AddListing() {
         />
       </View>
 
+       <View style={styles.imageUploadBox}>
+        <Text style={{ color: '#888' }}>Tap to upload image</Text>
+      </View>
+      
       <View style={styles.actions}>
         <Pressable onPress={handleSubmit} style={styles.createButton} accessibilityLabel="Create listing">
           <Text style={styles.createButtonText}>Create Listing</Text>
