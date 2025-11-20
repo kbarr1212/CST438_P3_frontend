@@ -1,24 +1,22 @@
-import React, { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View, FlatList, ActivityIndicator,} from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Pressable, Text, View, FlatList, ActivityIndicator, } from 'react-native';
+import { useRouter } from 'expo-router';
 import { marketplaceStyles as styles } from '../../components/ui/style';
 
-type Item = { id: number; title: string; description: string;};
+type Item = { id: number; title: string; description: string; category: string; };
 
 export default function MarketplaceScreen() {
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string>('Select All');
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
-  function toggleFilter(name: string) {
-    setSelected(prev => (prev === name ? null : name));
-  }
+  function toggleFilter(name: string) { setSelected(prev => (prev === name ? 'Select All' : name)); }
 
   useEffect(() => {
     async function loadItems() {
       try {
-        const res = await fetch(
-          'https://cst438-project3-backend-ae08bf484454.herokuapp.com/api/items'
-        );
+        const res = await fetch('https://cst438-project3-backend-ae08bf484454.herokuapp.com/api/items');
         const data = await res.json();
         setItems(data);
       } catch (err) {
@@ -27,9 +25,13 @@ export default function MarketplaceScreen() {
         setLoading(false);
       }
     }
-
     loadItems();
   }, []);
+
+  const filteredItems = useMemo(() => {
+    if (selected === 'Select All') return items;
+    return items.filter(item => item.category && item.category === selected);
+  }, [items, selected]);
 
   return (
     <View style={styles.container}>
@@ -37,31 +39,22 @@ export default function MarketplaceScreen() {
 
       <View style={styles.filtersRow}>
         <Pressable
-          style={[
-            styles.filterButton,
-            selected === 'Select All' && styles.filterButtonSelected,
-          ]}
+          style={[ styles.filterButton, selected === 'Select All' && styles.filterButtonSelected ]}
           onPress={() => toggleFilter('Select All')}>
           <Text style={[styles.filterText, selected === 'Select All' && styles.filterTextSelected]}>
             Select All
           </Text>
         </Pressable>
 
-        <Pressable
-          style={[styles.filterButton, selected === 'Tops' && styles.filterButtonSelected]}
-          onPress={() => toggleFilter('Tops')}>
+        <Pressable style={[styles.filterButton, selected === 'Tops' && styles.filterButtonSelected]} onPress={() => toggleFilter('Tops')}>
           <Text style={[styles.filterText, selected === 'Tops' && styles.filterTextSelected]}>Tops</Text>
         </Pressable>
 
-        <Pressable
-          style={[styles.filterButton, selected === 'Bottoms' && styles.filterButtonSelected]}
-          onPress={() => toggleFilter('Bottoms')}>
+        <Pressable style={[styles.filterButton, selected === 'Bottoms' && styles.filterButtonSelected]} onPress={() => toggleFilter('Bottoms')}>
           <Text style={[styles.filterText, selected === 'Bottoms' && styles.filterTextSelected]}>Bottoms</Text>
         </Pressable>
 
-        <Pressable
-          style={[styles.filterButton, selected === 'Shoes' && styles.filterButtonSelected]}
-          onPress={() => toggleFilter('Shoes')}>
+        <Pressable style={[styles.filterButton, selected === 'Shoes' && styles.filterButtonSelected]} onPress={() => toggleFilter('Shoes')}>
           <Text style={[styles.filterText, selected === 'Shoes' && styles.filterTextSelected]}>Shoes</Text>
         </Pressable>
       </View>
@@ -70,13 +63,25 @@ export default function MarketplaceScreen() {
         <ActivityIndicator style={{ marginTop: 20 }} />
       ) : (
         <FlatList
-          data={items}
+          data={filteredItems}
           keyExtractor={item => item.id.toString()}
           numColumns={3}
           columnWrapperStyle={styles.gridRow}
           contentContainerStyle={{ paddingBottom: 60 }}
           renderItem={({ item }) => (
-            <View style={styles.card}>
+            <Pressable
+              style={styles.card}
+              onPress={() =>
+                router.push({
+                  pathname: '/item/[id]',
+                  params: {
+                    id: String(item.id),
+                    title: item.title,
+                    description: item.description,
+                    category: item.category,
+                  },
+                })
+              }>
               <View style={styles.imagePlaceholder}>
                 <Text style={{ fontSize: 10, color: '#555' }}>Image</Text>
               </View>
@@ -88,14 +93,11 @@ export default function MarketplaceScreen() {
               <Text numberOfLines={2} style={styles.cardDescription}>
                 {item.description}
               </Text>
-            </View>
+            </Pressable>
           )}
-          ListEmptyComponent={
-            <Text style={{ marginTop: 20 }}>No items yet.</Text>
-          }
+          ListEmptyComponent={<Text style={{ marginTop: 20 }}>No items yet.</Text>}
         />
       )}
     </View>
   );
 }
-
