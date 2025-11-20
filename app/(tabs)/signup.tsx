@@ -114,10 +114,48 @@ export default function SignupScreen() {
 
 
   useEffect(() => {
+  const handleGoogleAuth = async () => {
     if (response?.type === "success") {
-      console.log("Google auth success:", response);
+      try {
+        const { authentication } = response;
+        const accessToken = authentication?.accessToken;
+
+        if (!accessToken) {
+          console.error("No access token found");
+          return;
+        }
+
+        const googleUserRes = await fetch("https://www.googleapis.com/userinfo/v2/me", {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        const googleUser = await googleUserRes.json();
+        console.log("Google user:", googleUser);
+
+        const backendRes = await fetch(`${API_BASE_URL}/google`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ access_token: accessToken }),
+        });
+
+        if (!backendRes.ok) {
+          const errText = await backendRes.text();
+          console.error("Failed to save user:", errText);
+          return;
+        }
+
+        const savedUser = await backendRes.json();
+        console.log("User saved to DB:", savedUser);
+
+        router.push("/marketplace");
+
+      } catch (err) {
+        console.error("Google auth error:", err);
+      }
     }
-  }, [response]);
+  };
+
+  handleGoogleAuth();
+}, [response]);
 
   return (
     <KeyboardAvoidingView
