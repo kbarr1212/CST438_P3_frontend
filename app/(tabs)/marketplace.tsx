@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Pressable, Text, View, FlatList, ActivityIndicator, } from 'react-native';
+import { Pressable, Text, View, FlatList, ActivityIndicator, Image} from 'react-native';
 import { useRouter } from 'expo-router';
 import { marketplaceStyles as styles } from '../../components/ui/style';
 
-type Item = { id: number; title: string; description: string; category: string; };
+type Item = { id: number; title: string; description: string; category: string; imageUrl?: string;};
 
 export default function MarketplaceScreen() {
   const [selected, setSelected] = useState<string>('Select All');
@@ -83,7 +83,15 @@ export default function MarketplaceScreen() {
                 })
               }>
               <View style={styles.imagePlaceholder}>
-                <Text style={{ fontSize: 10, color: '#555' }}>Image</Text>
+                {item.imageUrl ? (
+                  <Image
+                    source={{ uri: item.imageUrl }}
+                    style={styles.imagePlaceholder}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <Text style={{ fontSize: 10, color: '#555' }}>Image</Text>
+                )}
               </View>
 
               <Text numberOfLines={1} style={styles.cardTitle}>

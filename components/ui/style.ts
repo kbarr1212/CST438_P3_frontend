@@ -53,7 +53,7 @@ export const marketplaceStyles = StyleSheet.create({
   },
   imagePlaceholder: {
     width: '100%',
-    height: 80,
+    height: 150,
     backgroundColor: '#e2e2e2',
     borderRadius: 10,
     justifyContent: 'center',
@@ -270,4 +270,16 @@ export const addListingStyles = StyleSheet.create({
   actions: {
     marginTop: 8,
   },
+  imageUploadBox: {
+  width: 200,
+  height: 200,
+  backgroundColor: '#eee',
+  justifyContent: 'center',
+  alignItems: 'center',
+  borderRadius: 12,
+  marginBottom: 16,
+  alignSelf: 'center',
+  borderWidth: 1,
+  borderColor: '#ccc',
+},
 });
