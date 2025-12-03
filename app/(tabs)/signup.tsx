@@ -90,19 +90,27 @@ export default function SignupScreen() {
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await response.json();
+      let data: any = null;
+      try {
+        data = await response.json();
+      } catch (e) {
+        // body might be empty / non-JSON
+      }
 
       if (!response.ok) {
-        // Backend sends a message if signup fails
-        setError(data);
+        const message =
+          typeof data === "string"
+            ? data
+            : data?.message ||
+              data?.error ||
+              "Signup failed. Please try again.";
+        setError(message);   // 👈 always a string
         return;
       }
 
       console.log("Signup success:", data);
       alert("Account created successfully!");
-      // navigate to login screen
-      router.push("/login"); 
-
+      router.push("/login");
     } catch (err) {
       console.error("Signup error:", err);
       setError("Something went wrong. Please try again later.");
@@ -111,7 +119,6 @@ export default function SignupScreen() {
     console.log("Continue with email:", email);
   }
 };
-
 
   useEffect(() => {
   const handleGoogleAuth = async () => {
