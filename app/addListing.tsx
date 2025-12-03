@@ -14,6 +14,7 @@ export default function AddListing() {
   const [price, setPrice] = useState('');
   const [description, setDescription] = useState('');
   const [imageUri, setImageUri] = useState<string | null>(null);
+  const [category, setCategory] = useState<string>('Tops');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const pickImage = async () => {
@@ -84,7 +85,7 @@ export default function AddListing() {
       const itemPayload = {
         title: name,
         description: `${description}\n\nSize: ${size || 'N/A'}\nPrice: ${price || 'N/A'}`,
-        category: size || 'general', // you can change this mapping later
+        category: category,
         imageUrl: imageUrl,
       };
 
@@ -162,6 +163,44 @@ export default function AddListing() {
         />
       </View>
 
+      {/* CATEGORY BUTTONS */}
+      <View style={styles.field}>
+        <Text style={styles.label}>Category</Text>
+
+        <View
+          style={{
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            gap: 10,
+            marginTop: 5,
+          }}
+        >
+          {['Tops', 'Bottoms', 'Shoes', 'Accessories'].map((cat) => (
+            <Pressable
+              key={cat}
+              onPress={() => setCategory(cat)}
+              style={{
+                paddingVertical: 8,
+                paddingHorizontal: 14,
+                borderRadius: 8,
+                borderWidth: 1,
+                borderColor: category === cat ? '#000' : '#ccc',
+                backgroundColor: category === cat ? '#000' : '#fff',
+              }}
+            >
+              <Text
+                style={{
+                  color: category === cat ? '#fff' : '#000',
+                  fontWeight: '600',
+                }}
+              >
+                {cat}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      </View>
+
        {/* Image upload box */}
       <Pressable style={styles.imageUploadBox} onPress={pickImage}>
         {imageUri ? (
@@ -192,4 +231,3 @@ export default function AddListing() {
     </ScrollView>
   );
 }
-

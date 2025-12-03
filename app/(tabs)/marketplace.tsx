@@ -57,6 +57,10 @@ export default function MarketplaceScreen() {
         <Pressable style={[styles.filterButton, selected === 'Shoes' && styles.filterButtonSelected]} onPress={() => toggleFilter('Shoes')}>
           <Text style={[styles.filterText, selected === 'Shoes' && styles.filterTextSelected]}>Shoes</Text>
         </Pressable>
+
+        <Pressable style={[styles.filterButton, selected === 'Accessories' && styles.filterButtonSelected]} onPress={() => toggleFilter('Accessories')}>
+          <Text style={[styles.filterText, selected === 'Accessories' && styles.filterTextSelected]}>Accessories</Text>
+        </Pressable>
       </View>
 
       {loading ? (
