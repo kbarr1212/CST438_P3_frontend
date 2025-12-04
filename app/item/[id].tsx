@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
+import {View, Text, StyleSheet, Pressable, Image, Alert, Platform,} from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { useCart } from '@/context/CartContext';
 
 type ItemParams = {
   id?: string;
@@ -11,26 +12,50 @@ type ItemParams = {
 };
 
 export default function ItemDetailScreen() {
-  
   const params = useLocalSearchParams<ItemParams>();
   const router = useRouter();
+  const { addToCart } = useCart();
 
-  const id = params.id ?? '';
+  const id = params.id ? Number(params.id) : 0;
   const title = params.title ?? 'Item details';
   const description = params.description ?? '';
   const imageUrl = params.imageUrl ?? '';
-  const price = params.price ?? '';
+  const rawPrice = params.price ? Number(params.price) : 0;
+  const price = isNaN(rawPrice) ? 0 : rawPrice;
+
+  console.log('🧾 ItemDetail params:', params);
 
   function handleAddToCart() {
-    console.log(`Added item ${id} to cart`);
+    const itemToAdd = {
+      id,
+      title,
+      description,
+      imageUrl,
+      price,
+    };
+
+    console.log('🛒 handleAddToCart called with:', itemToAdd);
+    addToCart(itemToAdd);
+
+    const msg = 'Item added to cart';
+
+    if (Platform.OS === 'web') {
+      alert(msg);
+      router.push('/(tabs)/marketplace');
+    } else {
+      Alert.alert('Added to cart', msg, [
+        {
+          text: 'OK',
+          onPress: () => router.push('/(tabs)/marketplace'),
+        },
+      ]);
+    }
   }
-console.log("ItemDetail params:", params);
 
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ title }} />
 
-      {/* Product Image */}
       {imageUrl ? (
         <Image source={{ uri: imageUrl }} style={styles.imageBox} resizeMode="cover" />
       ) : (
@@ -40,7 +65,7 @@ console.log("ItemDetail params:", params);
       )}
 
       <Text style={styles.title}>{title}</Text>
-      <Text style={styles.price}>${price}</Text>
+      <Text style={styles.price}>${price.toFixed(2)}</Text>
       <Text style={styles.description}>{description}</Text>
 
       <Pressable style={styles.cartButton} onPress={handleAddToCart}>
