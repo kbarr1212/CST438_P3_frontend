@@ -21,7 +21,7 @@ WebBrowser.maybeCompleteAuthSession();
 const API_BASE_URL =
   Platform.OS === "android"
     ? "http://10.0.2.2:8080"      // Android emulator
-    : "http://localhost:8080";    // iOS simulator / web on same machine
+    : "https://cst438-project3-backend-ae08bf484454.herokuapp.com";    // iOS simulator / web on same machine
 
 export default function LoginScreen() {
   const { setIsLoggedIn, setUsername } = useAuth();
