@@ -47,7 +47,7 @@ export default function TabLayout() {
         }}
       />
 
-      {/* 🔥 New Sign Out tab */}
+      {}
       <Tabs.Screen
         name="signout"
         options={{
