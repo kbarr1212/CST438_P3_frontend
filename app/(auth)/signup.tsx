@@ -19,34 +19,36 @@ WebBrowser.maybeCompleteAuthSession();
 
 const API_BASE_URL = "http://localhost:8080/api/auth"
 
-export default function LoginScreen() {
+export default function SignupScreen() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPasswordFields, setShowPasswordFields] = useState(false);
   const [error, setError] = useState("");
 
+  // Google Auth Request
   const [request, response, promptAsync] = Google.useAuthRequest({
     androidClientId: "961378291358-7lbk7gaeuf4m9lps3qb567h8te5708a5.apps.googleusercontent.com",
     webClientId: "961378291358-q862ql18vlqvshbo2fo6p1v51uib13r5.apps.googleusercontent.com",
   });
 
+  // GitHub OAuth configuration
   const discovery = {
-      authorizationEndpoint: 'https://github.com/login/oauth/authorize',
-      tokenEndpoint: 'https://github.com/login/oauth/access_token',
-    };
-  
-    const [githubRequest, githubResponse, githubPromptAsync] = useAuthRequest(
-    {
-      clientId: process.env.EXPO_PUBLIC_GITHUB_CLIENT_ID!, 
-      scopes: ["read:user", "user:email"],
-      redirectUri: makeRedirectUri({
-        scheme: "thriftmarket", 
-      }),
-    },
-    discovery
-  );
-  
+    authorizationEndpoint: 'https://github.com/login/oauth/authorize',
+    tokenEndpoint: 'https://github.com/login/oauth/access_token',
+  };
+
+  const [githubRequest, githubResponse, githubPromptAsync] = useAuthRequest(
+  {
+    clientId: process.env.EXPO_PUBLIC_GITHUB_CLIENT_ID!, 
+    scopes: ["read:user", "user:email"],
+    redirectUri: makeRedirectUri({
+      scheme: "thriftmarket", 
+    }),
+  },
+  discovery
+);
 
   const isValidEmail = (val: string) =>
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
@@ -59,34 +61,58 @@ export default function LoginScreen() {
     }
   }, [email]);
 
-  const handleContinue = async () => {
+  useEffect(() => {
+  if (githubResponse?.type === "success") {
+    const { code } = githubResponse.params;
+    console.log("GitHub auth success, code:", code);
+    // TODO: Send `code` to your backend to exchange for access_token
+  }
+}, [githubResponse]);
+
+ const handleContinue = async () => {
   if (showPasswordFields) {
-    if (!password) {
-      setError("Please enter your password.");
+    if (!password || !confirmPassword) {
+      setError("Please enter both passwords.");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
       return;
     }
 
     setError("");
 
     try {
-      const response = await fetch("http://localhost:8080/api/auth/login", {
+      const response = await fetch(`${API_BASE_URL}/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await response.json();
+      let data: any = null;
+      try {
+        data = await response.json();
+      } catch (e) {
+        // body might be empty / non-JSON
+      }
 
       if (!response.ok) {
-        setError(data);
+        const message =
+          typeof data === "string"
+            ? data
+            : data?.message ||
+              data?.error ||
+              "Signup failed. Please try again.";
+        setError(message); 
         return;
       }
 
-      console.log("Login success:", data);
-      alert("Logged in successfully!");
-      router.push("/marketplace"); 
+      console.log("Signup success:", data);
+      alert("Account created successfully!");
+      router.push("/login");
     } catch (err) {
-      console.error("Login error:", err);
+      console.error("Signup error:", err);
       setError("Something went wrong. Please try again later.");
     }
   } else {
@@ -95,10 +121,48 @@ export default function LoginScreen() {
 };
 
   useEffect(() => {
+  const handleGoogleAuth = async () => {
     if (response?.type === "success") {
-      console.log("Google auth success:", response);
+      try {
+        const { authentication } = response;
+        const accessToken = authentication?.accessToken;
+
+        if (!accessToken) {
+          console.error("No access token found");
+          return;
+        }
+
+        const googleUserRes = await fetch("https://www.googleapis.com/userinfo/v2/me", {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        const googleUser = await googleUserRes.json();
+        console.log("Google user:", googleUser);
+
+        const backendRes = await fetch(`${API_BASE_URL}/google`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ access_token: accessToken }),
+        });
+
+        if (!backendRes.ok) {
+          const errText = await backendRes.text();
+          console.error("Failed to save user:", errText);
+          return;
+        }
+
+        const savedUser = await backendRes.json();
+        console.log("User saved to DB:", savedUser);
+
+        router.push("/(tabs)/marketplace");
+
+      } catch (err) {
+        console.error("Google auth error:", err);
+      }
     }
-  }, [response]);
+  };
+
+  handleGoogleAuth();
+}, [response]);
 
   return (
     <KeyboardAvoidingView
@@ -106,14 +170,14 @@ export default function LoginScreen() {
       style={styles.outerContainer}
     >
       <ScrollView
-        contentContainerStyle={{ flexGrow: 1, justifyContent: "center" }}
+        contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.card}>
           <Text style={styles.title}>Thrift Market ™</Text>
 
-          <Text style={styles.subtitle}>Log in</Text>
-          <Text style={styles.text}>Enter your email to Log in for this app</Text>
+          <Text style={styles.subtitle}>Create an account</Text>
+          <Text style={styles.text}>Enter your email to sign up for this app</Text>
 
           <TextInput
             style={styles.input}
@@ -135,6 +199,14 @@ export default function LoginScreen() {
                 value={password}
                 onChangeText={setPassword}
               />
+              <TextInput
+                style={styles.input}
+                placeholder="Confirm Password"
+                placeholderTextColor="#999"
+                secureTextEntry
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+              />
             </>
           )}
 
@@ -142,7 +214,7 @@ export default function LoginScreen() {
 
           <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>
             <Text style={styles.continueText}>
-              {showPasswordFields ? "Log in" : "Continue"}
+              {showPasswordFields ? "Sign Up" : "Continue"}
             </Text>
           </TouchableOpacity>
 
@@ -170,7 +242,7 @@ export default function LoginScreen() {
             style={styles.githubButton}
             disabled={!githubRequest}
             onPress={() => githubPromptAsync()}
-          >
+>
             <Image
               source={{ uri: "https://img.icons8.com/ios11/512/FFFFFF/github.png" }}
               style={styles.icon}
@@ -184,9 +256,9 @@ export default function LoginScreen() {
             <Text style={styles.link}>Privacy Policy</Text>.
           </Text>
         <View style={styles.bottomRow}>
-          <Text style={styles.bottomText}>Don't have an account? </Text>
-          <TouchableOpacity onPress={() => router.push("/signup")}>
-          <Text style={styles.bottomLink}>Sign Up</Text>
+          <Text style={styles.bottomText}>Already have an account? </Text>
+          <TouchableOpacity onPress={() => router.push("/(auth)/login")}>
+          <Text style={styles.bottomLink}>Log In</Text>
   </TouchableOpacity>
         </View>
         </View>
@@ -206,8 +278,8 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: "#fff",
     borderRadius: 24,
-    width: "100%",
-    maxWidth: 420,
+    width: "90%",
+    alignSelf: "center",
     padding: 24,
     shadowColor: "#000",
     shadowOpacity: 0.15,
@@ -340,5 +412,10 @@ githubButtonText: {
   fontWeight: "600",
   color: "#2979FF",
   textDecorationLine: "underline",
+},
+scrollContent: {
+  flexGrow: 1,
+  justifyContent: "center",
+  paddingVertical: 40,
 },
 });
