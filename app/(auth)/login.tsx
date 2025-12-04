@@ -16,17 +16,15 @@ import {
 } from "react-native";
 import { useAuth } from "../../hooks/useAuth";
 
-
 WebBrowser.maybeCompleteAuthSession();
 
-// 👇 replace your current API_BASE_URL line with this
 const API_BASE_URL =
   Platform.OS === "android"
     ? "http://10.0.2.2:8080"      // Android emulator
     : "http://localhost:8080";    // iOS simulator / web on same machine
 
 export default function LoginScreen() {
-  const { setIsLoggedIn } = useAuth();
+  const { setIsLoggedIn, setUsername } = useAuth();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -85,6 +83,14 @@ export default function LoginScreen() {
 
       console.log("Login success:", data);
       alert("Logged in successfully!");
+      
+      const backendUsername =
+      data?.user?.username ??
+      data?.username ??
+      email.split("@")[0]; // fallback if backend doesn't send one
+      
+      setUsername(backendUsername); 
+      
       setIsLoggedIn(true);
       router.push("/(tabs)/marketplace"); 
     } catch (err) {
