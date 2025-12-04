@@ -3,7 +3,7 @@ import { Pressable, Text, View, FlatList, ActivityIndicator, Image} from 'react-
 import { useRouter } from 'expo-router';
 import { marketplaceStyles as styles } from '../../components/ui/style';
 
-type Item = { id: number; title: string; description: string; category: string; imageUrl?: string;};
+type Item = { id: number; title: string; description: string; category: string; imageUrl?: string; price: string;};
 
 export default function MarketplaceScreen() {
   const [selected, setSelected] = useState<string>('Select All');
@@ -83,6 +83,8 @@ export default function MarketplaceScreen() {
                     title: item.title,
                     description: item.description,
                     category: item.category,
+                    imageUrl: item.imageUrl,
+                    price: item.price,
                   },
                 })
               }>
@@ -103,7 +105,7 @@ export default function MarketplaceScreen() {
               </Text>
 
               <Text numberOfLines={2} style={styles.cardDescription}>
-                {item.description}
+                ${item.price}
               </Text>
             </Pressable>
           )}

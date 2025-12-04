@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import * as ImagePicker from 'expo-image-picker';
-import { Alert, Image, Pressable, ScrollView, Text, TextInput, View, ActivityIndicator} from 'react-native';
+import { Alert, Image, Pressable, Platform,ScrollView, Text, TextInput, View, ActivityIndicator} from 'react-native';
 import { addListingStyles as styles } from '../components/ui/style';
 
 const API_BASE = 'https://cst438-project3-backend-ae08bf484454.herokuapp.com'
@@ -21,7 +21,11 @@ export default function AddListing() {
     // Ask for permission
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission needed', 'We need access to your photos to upload an image.');
+      if (Platform.OS === 'web') {
+        window.alert('We need access to your photos to upload an image.');
+      } else {
+        Alert.alert('Permission needed', 'We need access to your photos to upload an image.');
+      }
       return;
     }
 
@@ -39,34 +43,43 @@ export default function AddListing() {
   const uploadImageToBackend = async (): Promise<string | null> => {
     if (!imageUri) return null;
 
-    const formData = new FormData();
+    let fileToUpload: any = null;
 
-    // React Native file object
-    formData.append('file', {
-      uri: imageUri,
-      name: 'listing-image.jpg',
-      type: 'image/jpeg',
-    } as any);
+    if (Platform.OS === 'web') {
+      const response = await fetch(imageUri);
+      const blob = await response.blob();
+      fileToUpload = new File([blob], 'listing-image.jpg', { type: blob.type });
+    } else {
+      fileToUpload = {
+        uri: imageUri,
+        name: 'listing-image.jpg',
+        type: 'image/jpeg',
+      };
+    }
+
+    const formData = new FormData();
+    formData.append('file', fileToUpload);
 
     const response = await fetch(`${API_BASE}/api/upload`, {
       method: 'POST',
       body: formData,
-      // NOTE: do NOT set Content-Type manually for FormData in RN,
-      // fetch will set the correct multipart boundary.
     });
 
     if (!response.ok) {
-      console.log('Upload failed status:', response.status);
       throw new Error('Failed to upload image');
     }
 
     const data = await response.json();
-    return data.url as string; // { url: "..." }
+    return data.url;
   };
 
   const handleSubmit = async () => {
     if (!name || !description) {
-      Alert.alert('Missing fields', 'Please fill out name and description at minimum.');
+      if (Platform.OS === 'web') {
+        window.alert('Please fill out name and description.');
+      } else {
+        Alert.alert('Missing fields', 'Please fill out name and description at minimum.');
+      }
       return;
     }
 
@@ -84,9 +97,10 @@ export default function AddListing() {
       // Item.java has: title, description, category, imageUrl
       const itemPayload = {
         title: name,
-        description: `${description}\n\nSize: ${size || 'N/A'}\nPrice: ${price || 'N/A'}`,
+        description: `${description} · Size: ${size || 'N/A'}\n`,
         category: category,
         imageUrl: imageUrl,
+        price: price,
       };
 
       const res = await fetch(`${API_BASE}/api/items`, {
@@ -216,7 +230,10 @@ export default function AddListing() {
 
       <View style={styles.actions}>
         <Pressable
-          onPress={handleSubmit}
+          onPress={() => {
+            console.log("Create listing pressed!");
+            handleSubmit();
+          }}
           style={styles.createButton}
           accessibilityLabel="Create listing"
           disabled={isSubmitting}
