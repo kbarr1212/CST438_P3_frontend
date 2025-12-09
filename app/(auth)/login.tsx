@@ -1,5 +1,6 @@
 import { makeRedirectUri, useAuthRequest } from "expo-auth-session";
 import * as Google from "expo-auth-session/providers/google";
+import Constants from "expo-constants";
 import { useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import React, { useEffect, useState } from "react";
@@ -19,123 +20,245 @@ import { useAuth } from "../../hooks/useAuth";
 WebBrowser.maybeCompleteAuthSession();
 
 const API_BASE_URL =
-  Platform.OS === "android"
-    ? "http://10.0.2.2:8080"      // Android emulator
-    : "https://cst438-project3-backend-ae08bf484454.herokuapp.com";    // iOS simulator / web on same machine
+  Platform.OS === "web"
+    ? "https://cst438-project3-backend-ae08bf484454.herokuapp.com/api/auth"
+    : "https://cst438-project3-backend-ae08bf484454.herokuapp.com/api/auth";
 
 export default function LoginScreen() {
-  const { setIsLoggedIn, setUsername } = useAuth();
+  const { setIsLoggedIn, setUsername, setUser } = useAuth();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
+  // ---------- GOOGLE ----------
   const [request, response, promptAsync] = Google.useAuthRequest({
-    androidClientId: "961378291358-7lbk7gaeuf4m9lps3qb567h8te5708a5.apps.googleusercontent.com",
-    webClientId: "961378291358-q862ql18vlqvshbo2fo6p1v51uib13r5.apps.googleusercontent.com",
+    androidClientId:
+      "961378291358-7lbk7gaeuf4m9lps3qb567h8te5708a5.apps.googleusercontent.com",
+    webClientId:
+      "961378291358-q862ql18vlqvshbo2fo6p1v51uib13r5.apps.googleusercontent.com",
   });
 
+  // ---------- GITHUB ----------
+  const extra =
+    Constants.expoConfig?.extra ?? (Constants as any).manifest?.extra;
+  const GITHUB_CLIENT_ID =
+    Platform.OS === "web"
+      ? (extra?.githubClientId as string)
+      : (extra?.githubClientIdNative as string);
+
   const discovery = {
-      authorizationEndpoint: 'https://github.com/login/oauth/authorize',
-      tokenEndpoint: 'https://github.com/login/oauth/access_token',
-    };
-  
-    const [githubRequest, githubResponse, githubPromptAsync] = useAuthRequest(
+    authorizationEndpoint: "https://github.com/login/oauth/authorize",
+    tokenEndpoint: "https://github.com/login/oauth/access_token",
+  };
+
+  const redirectUri =
+    Platform.OS === "web"
+      ? makeRedirectUri({ path: "redirect" }) // http://localhost:8081/redirect on web
+      : makeRedirectUri({ useProxy: true } as any); // Expo proxy for mobile
+
+  console.log("GitHub redirect URI ->", redirectUri);
+  console.log("GITHUB_CLIENT_ID ->", GITHUB_CLIENT_ID);
+
+  const [githubRequest, githubResponse, githubPromptAsync] = useAuthRequest(
     {
-      clientId: process.env.EXPO_PUBLIC_GITHUB_CLIENT_ID!, 
+      clientId: GITHUB_CLIENT_ID,
       scopes: ["read:user", "user:email"],
-      redirectUri: makeRedirectUri({
-        scheme: "thriftmarket", 
-      }),
+      redirectUri,
+      usePKCE: false,
     },
     discovery
   );
-  
 
   const isValidEmail = (val: string) =>
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
 
   const showPasswordFields = isValidEmail(email);
 
+  // ---------- GITHUB LOGIN HANDLER ----------
+  useEffect(() => {
+    const handleGithubLogin = async () => {
+      if (githubResponse?.type !== "success") return;
 
-  const handleContinue = async () => {
-  if (showPasswordFields) {
-    if (!password) {
-      setError("Please enter your password.");
-      return;
-    }
+      const code = githubResponse.params.code as string | undefined;
+      console.log("GitHub auth success, code:", code);
 
-    setError("");
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data);
+      if (!code) {
+        console.error("No GitHub code received");
+        setError("GitHub did not return a login code.");
         return;
       }
 
-      console.log("Login success:", data);
-      alert("Logged in successfully!");
-      
-      const backendUsername =
-      data?.user?.username ??
-      data?.username ??
-      email.split("@")[0]; // fallback if backend doesn't send one
-      
-      setUsername(backendUsername); 
-      
-      setIsLoggedIn(true);
-      router.push("/(tabs)/marketplace"); 
-    } catch (err) {
-      console.error("Login error:", err);
-      setError("Something went wrong. Please try again later.");
+      try {
+        const res = await fetch(`${API_BASE_URL}/github`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            code,
+            source: Platform.OS === "web" ? "web" : "mobile",
+          }),
+        });
+
+        const text = await res.text();
+        console.log("GitHub backend response:", res.status, text);
+
+        if (!res.ok) {
+          setError(text || "GitHub login failed.");
+          return;
+        }
+
+        const backendUser = JSON.parse(text);
+        console.log("GitHub user from backend:", backendUser);
+
+        // 🔹 store full user in auth context
+        setUser({
+          id: String(backendUser.id),
+          email: backendUser.email,
+          name: backendUser.username ?? backendUser.email,
+        });
+
+        const backendUsername =
+          backendUser.username ?? backendUser.email?.split("@")[0];
+
+        setUsername(backendUsername || "github-user");
+        setIsLoggedIn(true);
+
+        router.replace("/(tabs)/marketplace");
+      } catch (e) {
+        console.error("GitHub login error:", e);
+        setError("GitHub login error. Please try again.");
+      }
+    };
+
+    handleGithubLogin();
+  }, [githubResponse]);
+
+  // ---------- EMAIL / PASSWORD LOGIN ----------
+  const handleContinue = async () => {
+    if (showPasswordFields) {
+      if (!password) {
+        setError("Please enter your password.");
+        return;
+      }
+
+      setError("");
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        });
+
+        let data: any = null;
+        try {
+          data = await response.json();
+        } catch {
+          // non-JSON error body
+        }
+
+        if (!response.ok) {
+          const message =
+            typeof data === "string"
+              ? data
+              : data?.message ||
+                data?.error ||
+                "Login failed. Please try again.";
+          setError(message);
+          return;
+        }
+
+        console.log("Login success:", data);
+        alert("Logged in successfully!");
+
+        const backendUser = data; // backend returns the User directly
+
+        // 🔹 store full user
+        setUser({
+          id: String(backendUser.id),
+          email: backendUser.email,
+          name: backendUser.username ?? backendUser.email,
+        });
+
+        const backendUsername =
+          backendUser.username ?? backendUser.email?.split("@")[0];
+
+        setUsername(backendUsername);
+        setIsLoggedIn(true);
+        router.push("/(tabs)/marketplace");
+      } catch (err) {
+        console.error("Login error:", err);
+        setError("Something went wrong. Please try again later.");
+      }
+    } else {
+      console.log("Continue with email:", email);
     }
-  } else {
-    console.log("Continue with email:", email);
-  }
-}; 
-
-  useEffect(() => {
-  const handleGoogleLogin = async () => {
-    if (!response || response.type !== "success") return;
-
-    const accessToken =
-      (response as any).authentication?.accessToken ??
-      (response as any).params?.access_token;
-
-    if (!accessToken) {
-      setError("Google login failed: no access token.");
-      return;
-    }
-
-    const res = await fetch(`${API_BASE_URL}/api/auth/google`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ access_token: accessToken }),
-    });
-
-    const data = await res.json();
-    console.log("Google backend status:", res.status, "body:", data);
-
-    if (!res.ok) {
-      setError("Google login failed.");
-      return;
-    }
-
-    setIsLoggedIn(true);
-    router.replace("/(tabs)/marketplace");
   };
 
-  handleGoogleLogin();
-}, [response]);
+  // ---------- GOOGLE LOGIN HANDLER ----------
+  useEffect(() => {
+    const handleGoogleLogin = async () => {
+      if (!response || response.type !== "success") return;
 
+      try {
+        const accessToken =
+          (response as any).authentication?.accessToken ??
+          (response as any).params?.access_token;
+
+        if (!accessToken) {
+          setError("Google login failed: no access token.");
+          return;
+        }
+
+        const res = await fetch(`${API_BASE_URL}/google`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ access_token: accessToken }),
+        });
+
+        let data: any = null;
+        try {
+          data = await res.json();
+        } catch {
+          // non-JSON error body
+        }
+
+        console.log("Google backend status:", res.status, "body:", data);
+
+        if (!res.ok) {
+          setError(
+            (data && (data.message || data.error)) ||
+              "Google login failed."
+          );
+          return;
+        }
+
+        const backendUser = data; // backend returns the User directly
+
+        // 🔹 store full user
+        setUser({
+          id: String(backendUser.id),
+          email: backendUser.email,
+          name: backendUser.username ?? backendUser.email,
+        });
+
+        const backendUsername =
+          backendUser.username ?? backendUser.email?.split("@")[0];
+
+        if (backendUsername) {
+          setUsername(backendUsername);
+        }
+
+        setIsLoggedIn(true);
+        router.replace("/(tabs)/marketplace");
+      } catch (e) {
+        console.error("Google login error:", e);
+        setError("Google login failed. Please try again.");
+      }
+    };
+
+    handleGoogleLogin();
+  }, [response]);
 
   return (
     <KeyboardAvoidingView
@@ -143,6 +266,7 @@ export default function LoginScreen() {
       style={styles.outerContainer}
     >
       <ScrollView
+        style={{ flex: 1 }}
         contentContainerStyle={{ flexGrow: 1, justifyContent: "center" }}
         keyboardShouldPersistTaps="handled"
       >
@@ -220,12 +344,12 @@ export default function LoginScreen() {
             <Text style={styles.link}>Terms of Service</Text> and{" "}
             <Text style={styles.link}>Privacy Policy</Text>.
           </Text>
-        <View style={styles.bottomRow}>
-          <Text style={styles.bottomText}>Don't have an account? </Text>
-          <TouchableOpacity onPress={() => router.push("/(auth)/signup")}>
-          <Text style={styles.bottomLink}>Sign Up</Text>
-  </TouchableOpacity>
-        </View>
+          <View style={styles.bottomRow}>
+            <Text style={styles.bottomText}>Don't have an account? </Text>
+            <TouchableOpacity onPress={() => router.push("/(auth)/signup")}>
+              <Text style={styles.bottomLink}>Sign Up</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -236,15 +360,15 @@ const styles = StyleSheet.create({
   outerContainer: {
     flex: 1,
     backgroundColor: "#2979FF",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 24,
+    paddingVertical: 24,
+    paddingHorizontal: 16,
   },
   card: {
     backgroundColor: "#fff",
     borderRadius: 24,
     width: "100%",
     maxWidth: 420,
+    alignSelf: "center",
     padding: 24,
     shadowColor: "#000",
     shadowOpacity: 0.15,
@@ -331,20 +455,20 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   githubButton: {
-  flexDirection: "row",
-  alignItems: "center",
-  backgroundColor: "#24292f",
-  borderRadius: 10,
-  width: "100%",
-  height: 50,
-  justifyContent: "center",
-  marginBottom: 12,
-},
-githubButtonText: {
-  fontSize: 16,
-  color: "#fff",
-  fontWeight: "500",
-},
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#24292f",
+    borderRadius: 10,
+    width: "100%",
+    height: 50,
+    justifyContent: "center",
+    marginBottom: 12,
+  },
+  githubButtonText: {
+    fontSize: 16,
+    color: "#fff",
+    fontWeight: "500",
+  },
   terms: {
     fontSize: 12,
     color: "#000",
@@ -363,19 +487,19 @@ githubButtonText: {
     marginBottom: 8,
   },
   bottomRow: {
-  flexDirection: "row",
-  justifyContent: "center",
-  alignItems: "center",
-  marginTop: 16,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 16,
   },
   bottomText: {
-  fontSize: 14,
-  color: "#000",
+    fontSize: 14,
+    color: "#000",
   },
   bottomLink: {
-  fontSize: 14,
-  fontWeight: "600",
-  color: "#2979FF",
-  textDecorationLine: "underline",
-},
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#2979FF",
+    textDecorationLine: "underline",
+  },
 });

@@ -2,6 +2,8 @@ import { makeRedirectUri, useAuthRequest } from "expo-auth-session";
 import * as Google from "expo-auth-session/providers/google";
 import { useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
+import Constants from "expo-constants";
+import { useAuth } from "../../hooks/useAuth";
 import React, { useEffect, useState } from "react";
 import {
   Image,
@@ -17,7 +19,17 @@ import {
 
 WebBrowser.maybeCompleteAuthSession();
 
-const API_BASE_URL = "http://localhost:8080/api/auth"
+const extra = Constants.expoConfig?.extra ?? (Constants as any).manifest?.extra;
+const GITHUB_CLIENT_ID =
+  Platform.OS === "web"
+    ? (extra?.githubClientId as string)
+    : (extra?.githubClientIdNative as string);
+
+const API_BASE_URL =
+  Platform.OS === "web"
+    ? "https://cst438-project3-backend-ae08bf484454.herokuapp.com/api/auth"        // web
+    : "https://cst438-project3-backend-ae08bf484454.herokuapp.com/api/auth";  // mobile
+
 
 export default function SignupScreen() {
   const router = useRouter();
@@ -26,6 +38,7 @@ export default function SignupScreen() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPasswordFields, setShowPasswordFields] = useState(false);
   const [error, setError] = useState("");
+  const { setUser, setUsername, setIsLoggedIn } = useAuth();
 
   // Google Auth Request
   const [request, response, promptAsync] = Google.useAuthRequest({
@@ -39,13 +52,19 @@ export default function SignupScreen() {
     tokenEndpoint: 'https://github.com/login/oauth/access_token',
   };
 
-  const [githubRequest, githubResponse, githubPromptAsync] = useAuthRequest(
+  const redirectUri =
+    Platform.OS === "web"
+      ? makeRedirectUri({ path: "redirect" })
+      : makeRedirectUri({ useProxy: true } as any);
+  console.log("GitHub redirect URI ->", redirectUri);
+  console.log("GITHUB_CLIENT_ID ->", GITHUB_CLIENT_ID);
+
+const [githubRequest, githubResponse, githubPromptAsync] = useAuthRequest(
   {
-    clientId: process.env.EXPO_PUBLIC_GITHUB_CLIENT_ID!, 
+    clientId: GITHUB_CLIENT_ID,
     scopes: ["read:user", "user:email"],
-    redirectUri: makeRedirectUri({
-      scheme: "thriftmarket", 
-    }),
+    redirectUri,
+    usePKCE: false,
   },
   discovery
 );
@@ -61,12 +80,62 @@ export default function SignupScreen() {
     }
   }, [email]);
 
-  useEffect(() => {
-  if (githubResponse?.type === "success") {
-    const { code } = githubResponse.params;
+useEffect(() => {
+  const handleGithubLogin = async () => {
+    if (githubResponse?.type !== "success") return;
+
+    const code = githubResponse.params.code as string | undefined;
     console.log("GitHub auth success, code:", code);
-    // TODO: Send `code` to your backend to exchange for access_token
-  }
+
+    if (!code) {
+      console.error("No GitHub code received");
+      setError("GitHub did not return a login code.");
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/github`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    code,
+    source: Platform.OS === "web" ? "web" : "mobile",
+  }),
+});
+
+      const text = await res.text();
+      console.log("GitHub backend response:", res.status, text);
+
+      if (!res.ok) {
+        setError(text || "GitHub login failed.");
+        return;
+      }
+
+      const backendUser = JSON.parse(text);
+      console.log("GitHub user from backend:", backendUser);
+
+      // Map backend user -> AuthContext.User type
+      const mappedUser = {
+        id: String(backendUser.id),                 // backend gives a number
+        email: backendUser.email,
+        name: backendUser.username ?? backendUser.email,
+      };
+
+      // 🔐 push into your existing auth state
+      setUser(mappedUser);
+      setUsername(mappedUser.name || "");
+      setIsLoggedIn(true);
+
+      // 🚀 go to your main screen / profile
+      router.replace("/(tabs)/profile"); // or "/(tabs)/marketplace" if that's your home
+
+    } catch (e) {
+      console.error("GitHub login error:", e);
+      setError("GitHub login error. Please try again.");
+    }
+  };
+
+  handleGithubLogin();
 }, [githubResponse]);
 
  const handleContinue = async () => {
@@ -271,14 +340,14 @@ const styles = StyleSheet.create({
   outerContainer: {
     flex: 1,
     backgroundColor: "#2979FF",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 24,
+    paddingVertical: 24,
+    paddingHorizontal: 16,
   },
-  card: {
+card: {
     backgroundColor: "#fff",
     borderRadius: 24,
-    width: "90%",
+    width: "100%",
+    maxWidth: 420,
     alignSelf: "center",
     padding: 24,
     shadowColor: "#000",
