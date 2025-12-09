@@ -1,5 +1,5 @@
-import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import { useRouter, useFocusEffect  } from "expo-router";
+import React, { useState, useCallback } from "react";
 import {
   Alert,
   Image,
@@ -23,7 +23,7 @@ const API_BASE_URL =
 export default function ProfileScreen() {
   const router = useRouter();
 
-  const { user, username, setUsername, logout } = useAuth();
+  const { user, username, setUsername, logout, isLoading } = useAuth();
   const { favorites } = useFavorites();
 
   const [active, setActive] = useState<"Listings" | "Favorites">("Listings");
@@ -38,6 +38,52 @@ export default function ProfileScreen() {
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
   const [bannerUri, setBannerUri] = useState<string | null>(null);
 
+  const [myListings, setMyListings] = useState<any[]>([]);
+  const [loadingListings, setLoadingListings] = useState(false);
+
+  // 1. Sync username when auth restores
+  React.useEffect(() => {
+    if (username) {
+      setLocalUsername(username);
+    }
+  }, [username]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!user?.id) return;
+
+      const loadMyListings = async () => {
+        try {
+          setLoadingListings(true);
+
+          const res = await fetch(
+            `https://cst438-project3-backend-ae08bf484454.herokuapp.com/api/items/user/${user.id}`
+          );
+
+          if (!res.ok) throw new Error("Failed to load listings");
+
+          const data = await res.json();
+          setMyListings(data);
+        } catch (err) {
+          console.error("Load listings error:", err);
+        } finally {
+          setLoadingListings(false);
+        }
+      };
+
+      loadMyListings();
+    }, [user])
+  );
+
+  if (isLoading) {
+    return (
+      <View style={styles.container}>
+        <Text style={{ color: "white", textAlign: "center", marginTop: 40 }}>
+          Loading profile...
+        </Text>
+      </View>
+    );
+  }
   const displayName = username ?? localUsername;
 
   const openSettings = () => setMenuOpen(true);
@@ -244,15 +290,110 @@ const onDeleteAccount = () => {
       <View style={styles.content}>
         {active === "Listings" ? (
           <View style={styles.content}>
-            <Text style={styles.placeholder}>
-              Listings content will appear here.
-            </Text>
             <Pressable
               style={styles.addButton}
               onPress={() => router.push("/addListing")}
             >
               <Text style={styles.addText}>+</Text>
             </Pressable>
+            {loadingListings ? (
+              <Text style={styles.placeholder}>Loading your listings...</Text>
+            ) : myListings.length === 0 ? (
+              <Text style={styles.placeholder}>
+                You haven’t posted any listings yet.
+              </Text>
+            ) : (
+              <View style={{ width: "100%", marginTop: 12 }}>
+                {myListings.map((item) => (
+                  <View key={item.id} style={styles.favoriteCard}>
+
+                    {/* TAP TO VIEW ITEM */}
+                    <Pressable
+                      style={{ flexDirection: "row", flex: 1 }}
+                      onPress={() =>
+                        router.push({
+                          pathname: "/item/[id]",
+                          params: {
+                            id: String(item.id),
+                            title: item.title,
+                            description: item.description ?? "",
+                            category: item.category ?? "",
+                            imageUrl: item.imageUrl ?? "",
+                            price: item.price != null ? String(item.price) : "",
+                          },
+                        })
+                      }
+                    >
+                      {item.imageUrl ? (
+                        <Image
+                          source={{ uri: item.imageUrl }}
+                          style={styles.favoriteImage}
+                        />
+                      ) : (
+                        <View style={styles.favoriteImagePlaceholder}>
+                          <Text>Img</Text>
+                        </View>
+                      )}
+
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.favoriteTitle}>{item.title}</Text>
+                        <Text style={styles.favoritePrice}>
+                          ${Number(item.price).toFixed(2)}
+                        </Text>
+                      </View>
+                    </Pressable>
+
+                    {/* ✅ EDIT + DELETE BUTTONS */}
+                    <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 16, marginTop: 6 }}>
+
+                      {/* EDIT */}
+                      <Pressable
+                        onPress={() =>
+                          router.push({
+                            pathname: "/editListing",
+                            params: {
+                              id: String(item.id),
+                              title: item.title,
+                              description: item.description,
+                              price: item.price,
+                              category: item.category,
+                              imageUrl: item.imageUrl,
+                            },
+                          })
+                        }
+                      >
+                        <Text style={{ color: "#5b7b7a", fontWeight: "600" }}>Edit</Text>
+                      </Pressable>
+
+                      {/* DELETE */}
+                      <Pressable
+                        onPress={async () => {
+                          const confirmDelete =
+                            Platform.OS === "web"
+                              ? confirm("Delete this listing?")
+                              : true;
+
+                          if (!confirmDelete) return;
+
+                          await fetch(
+                            `https://cst438-project3-backend-ae08bf484454.herokuapp.com/api/items/${item.id}`,
+                            { method: "DELETE" }
+                          );
+
+                          setMyListings((prev) =>
+                            prev.filter((i) => i.id !== item.id)
+                          );
+                        }}
+                      >
+                        <Text style={{ color: "red", fontWeight: "600" }}>Delete</Text>
+                      </Pressable>
+                    </View>
+
+                  </View>
+                ))}
+
+              </View>
+            )}
           </View>
         ) : favorites.length === 0 ? (
           <Text style={styles.placeholder}>
