@@ -1,6 +1,6 @@
 {
   "expo": {
-    "owner": "abplasM",
+    "owner" : "abplasM", 
     "name": "Project3",
     "slug": "Project3",
     "version": "1.0.0",
@@ -41,8 +41,7 @@
           }
         }
       ],
-      "expo-web-browser",
-      "expo-secure-store"
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,
