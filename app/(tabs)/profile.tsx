@@ -8,13 +8,20 @@ import {
   Text,
   TextInput,
   View,
+  Platform,
 } from "react-native";
 import { profileStyles as styles } from "../../components/ui/style";
 import { useAuth } from "../../hooks/useAuth";
 
+const API_BASE_URL =
+  Platform.OS === "web"
+    ? "https://cst438-project3-backend-ae08bf484454.herokuapp.com/api/auth"
+    : "https://cst438-project3-backend-ae08bf484454.herokuapp.com/api/auth";
+
 export default function ProfileScreen() {
   const router = useRouter();
-  const { username, setUsername } = useAuth();
+
+  const { user, username, setUsername, logout } = useAuth();
 
   const [active, setActive] = useState<"Listings" | "Favorites">("Listings");
   const [menuOpen, setMenuOpen] = useState(false);
@@ -52,8 +59,6 @@ export default function ProfileScreen() {
 
     try {
       // TODO: call your backend to update username in DB
-      // await fetch(`${API_BASE_URL}/api/users/me/username`, { ... });
-
       setUsername(localUsername.trim());
       Alert.alert("Success", "Username updated.");
     } catch (e) {
@@ -67,8 +72,6 @@ export default function ProfileScreen() {
   const onSaveBio = async () => {
     try {
       // TODO: call your backend to update bio
-      // await fetch(`${API_BASE_URL}/api/users/me/bio`, { ... });
-
       Alert.alert("Success", "Bio updated.");
     } catch (e) {
       console.error("Update bio error:", e);
@@ -84,7 +87,6 @@ export default function ProfileScreen() {
       "Change profile picture",
       "Here you can integrate an image picker (e.g. expo-image-picker) to upload an avatar."
     );
-    // TODO: open image picker, upload to backend, call setAvatarUri(newUrl)
   };
 
   const onChangeBanner = () => {
@@ -93,22 +95,98 @@ export default function ProfileScreen() {
       "Change background image",
       "Here you can integrate an image picker to upload a header/background image."
     );
-    // TODO: open image picker, upload to backend, call setBannerUri(newUrl)
   };
+
+const onDeleteAccount = () => {
+  console.log("[Profile] Delete account pressed");
+  setMenuOpen(false);
+
+  const doDelete = async () => {
+    try {
+      console.log("[Profile] Confirmed delete, current user:", user);
+
+      if (!user?.id) {
+        Alert.alert(
+          "Error",
+          "Unable to determine your user id. Please log in again."
+        );
+        return;
+      }
+
+      const url = `${API_BASE_URL}/users/${user.id}`;
+      console.log("[Profile] Sending DELETE to:", url);
+
+      const res = await fetch(url, { method: "DELETE" });
+
+      console.log("[Profile] Delete response status:", res.status);
+
+      if (!res.ok && res.status !== 204) {
+        const text = await res.text();
+        console.error("Delete account error:", res.status, text);
+        Alert.alert(
+          "Error",
+          text || "Failed to delete account. Please try again."
+        );
+        return;
+      }
+
+      // ✅ Clear auth state
+      await logout();
+
+      // ✅ Navigate back to login
+      if (Platform.OS === "web") {
+        alert("Account deleted. Redirecting to login.");
+        router.replace("/(auth)/login");
+      } else {
+        Alert.alert("Account deleted", "Your account has been removed.", [
+          {
+            text: "OK",
+            onPress: () => router.replace("/(auth)/login"),
+          },
+        ]);
+      }
+    } catch (e) {
+      console.error("Delete account error:", e);
+      Alert.alert("Error", "Failed to delete account. Please try again.");
+    }
+  };
+
+  if (Platform.OS === "web") {
+    console.log("[Profile] Using browser confirm()");
+    // eslint-disable-next-line no-restricted-globals
+    const confirmed = confirm(
+      "Are you sure you want to delete your account? This cannot be undone."
+    );
+    if (confirmed) {
+      void doDelete();
+    }
+  } else {
+    Alert.alert(
+      "Delete account",
+      "Are you sure you want to delete your account? This action cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => {
+            void doDelete();
+          },
+        },
+      ]
+    );
+  }
+};
+
 
   return (
     <View style={styles.container}>
-      {/* Banner / background */}
+      {/* Banner */}
       <ImageBackground
-        source={
-          bannerUri
-            ? { uri: bannerUri }
-            : undefined
-        }
+        source={bannerUri ? { uri: bannerUri } : undefined}
         style={styles.banner}
         imageStyle={styles.bannerImage}
       >
-        {/* Settings button in top-right */}
         <Pressable
           onPress={openSettings}
           style={styles.settingsButton}
@@ -212,11 +290,18 @@ export default function ProfileScreen() {
             <Pressable style={styles.menuItem} onPress={onChangeBanner}>
               <Text style={styles.menuItemText}>Change background image</Text>
             </Pressable>
+
+            {/* Delete option in red */}
+            <Pressable style={styles.menuItem} onPress={onDeleteAccount}>
+              <Text style={[styles.menuItemText, { color: "red" }]}>
+                Delete account
+              </Text>
+            </Pressable>
           </View>
         </View>
       )}
 
-      {/* Username editor (simple inline modal-ish area) */}
+      {/* Username editor */}
       {editingUsername && (
         <View style={styles.editOverlay}>
           <View style={styles.editCard}>
