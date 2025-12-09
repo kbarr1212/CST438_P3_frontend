@@ -6,12 +6,17 @@ import React, {
   useState,
   ReactNode,
 } from "react";
+import { Platform } from "react-native";
+
+const API_BASE =
+  "https://cst438-project3-backend-ae08bf484454.herokuapp.com";
 
 type User = {
-  id: string;
+  id: number;
   email: string;
   name?: string;
-  // add more fields if you want
+  username: string;
+  provider: string;
 };
 
 export type AuthContextType = {
@@ -30,7 +35,7 @@ export type AuthContextType = {
   setUsername: (name: string) => void;
 
   // actions
-  login: (token: string) => Promise<void>;  // shape this however you like
+  login: (oauthUser: User) => Promise<void>;  // shape this however you like
   logout: () => Promise<void>;
 };
 
@@ -46,13 +51,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const restoreSession = async () => {
       try {
-        // TODO: read token from storage and fetch user if valid
-        // const token = await SecureStore.getItemAsync("authToken");
-        // if (token) {
-        //   const profile = await fetchUserProfile(token);
-        //   setUser(profile);
-        //   setIsLoggedIn(true);
-        // }
+        let saved: string | null = null;
+
+        if (Platform.OS === "web") {
+          saved = localStorage.getItem("authUser");
+        } else {
+          const SecureStore = await import("expo-secure-store");
+          saved = await SecureStore.getItemAsync("authUser");
+        }
+
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          setUser(parsed);
+          setUsername(parsed.username);
+          setIsLoggedIn(true);
+        }
       } catch (e) {
         console.warn("Error restoring session", e);
       } finally {
@@ -63,28 +76,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     restoreSession();
   }, []);
 
-  const login = async (token: string) => {
-    // TODO: save token, fetch user, etc.
-    // await SecureStore.setItemAsync("authToken", token);
-    // const profile = await fetchUserProfile(token);
-    // setUser(profile);
-    // For now, a placeholder:
-    const fakeUser: User = {
-      id: "temp-id",
-      email: "example@thriftmarket.com",
-      name: username || "Thrift User",
-    };
-
-    setUser(fakeUser);
+  const login = async (oauthUser: User) => {
+    setUser(oauthUser);
+    setUsername(oauthUser.username);
     setIsLoggedIn(true);
+
+    if (Platform.OS === "web") {
+      localStorage.setItem("authUser", JSON.stringify(oauthUser));
+    } else {
+      const SecureStore = await import("expo-secure-store");
+      await SecureStore.setItemAsync("authUser", JSON.stringify(oauthUser));
+    }
   };
 
   const logout = async () => {
-    // TODO: clear token from storage
-    // await SecureStore.deleteItemAsync("authToken");
     setUser(null);
     setIsLoggedIn(false);
     setUsername("");
+
+    if (Platform.OS === "web") {
+      localStorage.removeItem("authUser");
+    } else {
+      const SecureStore = await import("expo-secure-store");
+      await SecureStore.deleteItemAsync("authUser");
+    }
   };
 
   const value: AuthContextType = {
