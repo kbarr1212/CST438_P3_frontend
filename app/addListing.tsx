@@ -2,8 +2,6 @@ import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import * as ImagePicker from "expo-image-picker";
 import { Alert, Image, Pressable, Platform, ScrollView, Text, TextInput, View, ActivityIndicator,  StyleSheet, } from "react-native";
-import { useAuth } from "../hooks/useAuth";
-
 
 const API_BASE =
   "https://cst438-project3-backend-ae08bf484454.herokuapp.com";
@@ -18,7 +16,6 @@ export default function AddListing() {
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [category, setCategory] = useState<string>("Tops");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { user } = useAuth();
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -89,11 +86,6 @@ export default function AddListing() {
       return;
     }
 
-    if (!user?.id) {
-      Alert.alert("Not logged in", "You must be logged in to create a listing.");
-      return;
-    }
-
     setIsSubmitting(true);
 
     try {
@@ -109,7 +101,6 @@ export default function AddListing() {
         category,
         imageUrl,
         price,
-        user: { id: user.id },
       };
 
       const res = await fetch(`${API_BASE}/api/items`, {
