@@ -1,7 +1,6 @@
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
-import { Alert, Image, ImageBackground, Pressable, Text, TextInput, View,} from "react-native";
-import { profileStyles as styles } from "../../components/ui/style";
+import { Alert, Image, ImageBackground, Pressable, Text, TextInput, View, } from "react-native";
 import { useAuth } from "../../hooks/useAuth";
 import { useFavorites } from "@/context/FavoritesContext";
 
@@ -24,9 +23,7 @@ export default function ProfileScreen() {
 
   const displayName = username ?? localUsername;
 
-  const openSettings = () => {
-    setMenuOpen(true);
-  };
+  const openSettings = () => setMenuOpen(true);
 
   const onChangeUsername = () => {
     setMenuOpen(false);
@@ -38,53 +35,35 @@ export default function ProfileScreen() {
     setEditingBio(true);
   };
 
-  const onSaveUsername = async () => {
+  const onSaveUsername = () => {
     if (!localUsername.trim()) {
       Alert.alert("Username", "Username cannot be empty.");
       return;
     }
 
-    try {
-      setUsername(localUsername.trim());
-      Alert.alert("Success", "Username updated.");
-    } catch (e) {
-      console.error("Update username error:", e);
-      Alert.alert("Error", "Failed to update username.");
-    } finally {
-      setEditingUsername(false);
-    }
+    setUsername(localUsername.trim());
+    Alert.alert("Success", "Username updated.");
+    setEditingUsername(false);
   };
 
-  const onSaveBio = async () => {
-    try {
-      Alert.alert("Success", "Bio updated.");
-    } catch (e) {
-      console.error("Update bio error:", e);
-      Alert.alert("Error", "Failed to update bio.");
-    } finally {
-      setEditingBio(false);
-    }
+  const onSaveBio = () => {
+    Alert.alert("Success", "Bio updated.");
+    setEditingBio(false);
   };
 
   const onChangeAvatar = () => {
     setMenuOpen(false);
-    Alert.alert(
-      "Change profile picture",
-      "Here you can integrate an image picker (e.g. expo-image-picker) to upload an avatar."
-    );
+    Alert.alert("Change profile picture", "Add image picker here.");
   };
 
   const onChangeBanner = () => {
     setMenuOpen(false);
-    Alert.alert(
-      "Change background image",
-      "Here you can integrate an image picker to upload a header/background image."
-    );
+    Alert.alert("Change background image", "Add image picker here.");
   };
 
   return (
     <View style={styles.container}>
-      {/* Banner / background */}
+      {/* Banner */}
       <ImageBackground
         source={bannerUri ? { uri: bannerUri } : undefined}
         style={styles.banner}
@@ -99,7 +78,7 @@ export default function ProfileScreen() {
         </Pressable>
       </ImageBackground>
 
-      {/* Avatar + username + bio */}
+      {/* Avatar + Username */}
       <View style={styles.profileHeader}>
         <View style={styles.avatarWrapper}>
           {avatarUri ? (
@@ -122,7 +101,6 @@ export default function ProfileScreen() {
         <Pressable
           onPress={() => setActive("Listings")}
           style={styles.tabButton}
-          accessibilityState={{ selected: active === "Listings" }}
         >
           <Text
             style={[
@@ -138,7 +116,6 @@ export default function ProfileScreen() {
         <Pressable
           onPress={() => setActive("Favorites")}
           style={styles.tabButton}
-          accessibilityState={{ selected: active === "Favorites" }}
         >
           <Text
             style={[
@@ -152,7 +129,7 @@ export default function ProfileScreen() {
         </Pressable>
       </View>
 
-      {/* Tab content */}
+      {/* Content */}
       <View style={styles.content}>
         {active === "Listings" ? (
           <View style={styles.content}>
@@ -168,21 +145,14 @@ export default function ProfileScreen() {
           </View>
         ) : favorites.length === 0 ? (
           <Text style={styles.placeholder}>
-            You haven&apos;t favorited any items yet.
+            You haven’t favorited any items yet.
           </Text>
         ) : (
           <View style={{ width: "100%", marginTop: 12 }}>
             {favorites.map((item) => (
               <Pressable
                 key={item.id}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  marginBottom: 12,
-                  padding: 10,
-                  borderRadius: 12,
-                  backgroundColor: "#f4f4f4",
-                }}
+                style={styles.favoriteCard}
                 onPress={() =>
                   router.push({
                     pathname: "/item/[id]",
@@ -198,43 +168,23 @@ export default function ProfileScreen() {
                   })
                 }
               >
-                {/* Thumbnail */}
                 {item.imageUrl ? (
                   <Image
                     source={{ uri: item.imageUrl }}
-                    style={{
-                      width: 60,
-                      height: 60,
-                      borderRadius: 8,
-                      marginRight: 12,
-                    }}
+                    style={styles.favoriteImage}
                   />
                 ) : (
-                  <View
-                    style={{
-                      width: 60,
-                      height: 60,
-                      borderRadius: 8,
-                      marginRight: 12,
-                      backgroundColor: "#ddd",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
+                  <View style={styles.favoriteImagePlaceholder}>
                     <Text>Img</Text>
                   </View>
                 )}
 
-                {/* Title + price */}
                 <View style={{ flex: 1 }}>
-                  <Text
-                    style={{ fontSize: 16, fontWeight: "600" }}
-                    numberOfLines={1}
-                  >
+                  <Text style={styles.favoriteTitle} numberOfLines={1}>
                     {item.title}
                   </Text>
                   {item.price != null && (
-                    <Text style={{ fontSize: 14, color: "#555", marginTop: 2 }}>
+                    <Text style={styles.favoritePrice}>
                       ${Number(item.price).toFixed(2)}
                     </Text>
                   )}
@@ -269,7 +219,7 @@ export default function ProfileScreen() {
         </View>
       )}
 
-      {/* Username editor */}
+      {/* Username modal */}
       {editingUsername && (
         <View style={styles.editOverlay}>
           <View style={styles.editCard}>
@@ -298,7 +248,7 @@ export default function ProfileScreen() {
         </View>
       )}
 
-      {/* Bio editor */}
+      {/* Bio modal */}
       {editingBio && (
         <View style={styles.editOverlay}>
           <View style={styles.editCard}>
@@ -326,3 +276,271 @@ export default function ProfileScreen() {
     </View>
   );
 }
+
+const styles = {
+  container: {
+    flex: 1,
+    backgroundColor: "#0d1313",
+  },
+
+  banner: {
+    height: 80,
+    backgroundColor: "#182122",
+    justifyContent: "flex-end",
+    paddingHorizontal: 16,
+    paddingBottom: 10,
+  },
+
+  bannerImage: {
+    opacity: 0.4,
+  },
+
+  settingsButton: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    padding: 8,
+  },
+
+  settingsIcon: {
+    fontSize: 28,
+    color: "#aabcbc",
+  },
+
+  profileHeader: {
+    alignItems: "center",
+    marginTop: -50,
+    paddingHorizontal: 16,
+  },
+
+  avatarWrapper: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    overflow: "hidden",
+    borderWidth: 3,
+    borderColor: "#5b7b7a",
+  },
+
+  avatar: {
+    width: "100%",
+    height: "100%",
+  },
+
+  avatarPlaceholder: {
+    flex: 1,
+    backgroundColor: "#5b7b7a",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  avatarInitial: {
+    fontSize: 40,
+    fontWeight: "bold",
+    color: "white",
+  },
+
+  title: {
+    fontSize: 22,
+    fontWeight: "700",
+    marginTop: 10,
+    color: "white",
+  },
+
+  biography: {
+    fontSize: 14,
+    color: "#cfd7d7",
+    marginTop: 6,
+  },
+
+  tabsRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginTop: 20,
+    gap: 20,
+  },
+
+  tabButton: {
+    alignItems: "center",
+  },
+
+  tabText: {
+    fontSize: 16,
+    color: "#cfd7d7",
+  },
+
+  tabTextActive: {
+    color: "#5b7b7a",
+    fontWeight: "bold",
+  },
+
+  activeUnderline: {
+    marginTop: 3,
+    width: 40,
+    height: 3,
+    backgroundColor: "#5b7b7a",
+    borderRadius: 2,
+  },
+
+  content: {
+    flex: 1,
+    padding: 20,
+    alignItems: "center",
+  },
+
+  placeholder: {
+    color: "#9aa7a7",
+    textAlign: "center",
+    marginTop: 20,
+  },
+
+  addButton: {
+    marginTop: 20,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "#5b7b7a",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  addText: {
+    color: "white",
+    fontSize: 26,
+  },
+
+  /* Favorites cards */
+  favoriteCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#1b2424",
+    padding: 10,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+
+  favoriteImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    marginRight: 12,
+  },
+
+  favoriteImagePlaceholder: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    backgroundColor: "#333",
+    marginRight: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  favoriteTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "white",
+  },
+
+  favoritePrice: {
+    fontSize: 14,
+    color: "#9aa7a7",
+    marginTop: 2,
+  },
+
+  /* Settings menu */
+  menuOverlay: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+  },
+
+  backdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.6)",
+  },
+
+  menuContainer: {
+    position: "absolute",
+    right: 10,
+    top: 50,
+    backgroundColor: "#1b2424",
+    padding: 12,
+    borderRadius: 10,
+  },
+
+  menuItem: {
+    paddingVertical: 8,
+  },
+
+  menuItemText: {
+    color: "white",
+    fontSize: 16,
+  },
+
+  /* Edit modals */
+  editOverlay: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  editCard: {
+    width: "80%",
+    backgroundColor: "#1b2424",
+    padding: 20,
+    borderRadius: 12,
+  },
+
+  editTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "white",
+    marginBottom: 12,
+  },
+
+  editInput: {
+    backgroundColor: "#2b3434",
+    color: "white",
+    padding: 10,
+    borderRadius: 6,
+    marginBottom: 12,
+  },
+
+  editInputMultiline: {
+    height: 80,
+  },
+
+  editButtonsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+
+  editButtonSecondary: {
+    padding: 10,
+  },
+
+  editButtonTextSecondary: {
+    color: "#9aa7a7",
+    fontSize: 16,
+  },
+
+  editButtonPrimary: {
+    padding: 10,
+    backgroundColor: "#5b7b7a",
+    borderRadius: 6,
+  },
+
+  editButtonTextPrimary: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+};
