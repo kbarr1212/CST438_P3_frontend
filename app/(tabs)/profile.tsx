@@ -1,20 +1,14 @@
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
-import {
-  Alert,
-  Image,
-  ImageBackground,
-  Pressable,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { Alert, Image, ImageBackground, Pressable, Text, TextInput, View,} from "react-native";
 import { profileStyles as styles } from "../../components/ui/style";
 import { useAuth } from "../../hooks/useAuth";
+import { useFavorites } from "@/context/FavoritesContext";
 
 export default function ProfileScreen() {
   const router = useRouter();
   const { username, setUsername } = useAuth();
+  const { favorites } = useFavorites();
 
   const [active, setActive] = useState<"Listings" | "Favorites">("Listings");
   const [menuOpen, setMenuOpen] = useState(false);
@@ -51,9 +45,6 @@ export default function ProfileScreen() {
     }
 
     try {
-      // TODO: call your backend to update username in DB
-      // await fetch(`${API_BASE_URL}/api/users/me/username`, { ... });
-
       setUsername(localUsername.trim());
       Alert.alert("Success", "Username updated.");
     } catch (e) {
@@ -66,9 +57,6 @@ export default function ProfileScreen() {
 
   const onSaveBio = async () => {
     try {
-      // TODO: call your backend to update bio
-      // await fetch(`${API_BASE_URL}/api/users/me/bio`, { ... });
-
       Alert.alert("Success", "Bio updated.");
     } catch (e) {
       console.error("Update bio error:", e);
@@ -84,7 +72,6 @@ export default function ProfileScreen() {
       "Change profile picture",
       "Here you can integrate an image picker (e.g. expo-image-picker) to upload an avatar."
     );
-    // TODO: open image picker, upload to backend, call setAvatarUri(newUrl)
   };
 
   const onChangeBanner = () => {
@@ -93,22 +80,16 @@ export default function ProfileScreen() {
       "Change background image",
       "Here you can integrate an image picker to upload a header/background image."
     );
-    // TODO: open image picker, upload to backend, call setBannerUri(newUrl)
   };
 
   return (
     <View style={styles.container}>
       {/* Banner / background */}
       <ImageBackground
-        source={
-          bannerUri
-            ? { uri: bannerUri }
-            : undefined
-        }
+        source={bannerUri ? { uri: bannerUri } : undefined}
         style={styles.banner}
         imageStyle={styles.bannerImage}
       >
-        {/* Settings button in top-right */}
         <Pressable
           onPress={openSettings}
           style={styles.settingsButton}
@@ -185,10 +166,82 @@ export default function ProfileScreen() {
               <Text style={styles.addText}>+</Text>
             </Pressable>
           </View>
-        ) : (
+        ) : favorites.length === 0 ? (
           <Text style={styles.placeholder}>
-            Favorites content will appear here.
+            You haven&apos;t favorited any items yet.
           </Text>
+        ) : (
+          <View style={{ width: "100%", marginTop: 12 }}>
+            {favorites.map((item) => (
+              <Pressable
+                key={item.id}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginBottom: 12,
+                  padding: 10,
+                  borderRadius: 12,
+                  backgroundColor: "#f4f4f4",
+                }}
+                onPress={() =>
+                  router.push({
+                    pathname: "/item/[id]",
+                    params: {
+                      id: String(item.id),
+                      title: item.title,
+                      description: item.description ?? "",
+                      category: item.category ?? "",
+                      imageUrl: item.imageUrl ?? "",
+                      price:
+                        item.price != null ? String(item.price) : "",
+                    },
+                  })
+                }
+              >
+                {/* Thumbnail */}
+                {item.imageUrl ? (
+                  <Image
+                    source={{ uri: item.imageUrl }}
+                    style={{
+                      width: 60,
+                      height: 60,
+                      borderRadius: 8,
+                      marginRight: 12,
+                    }}
+                  />
+                ) : (
+                  <View
+                    style={{
+                      width: 60,
+                      height: 60,
+                      borderRadius: 8,
+                      marginRight: 12,
+                      backgroundColor: "#ddd",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Text>Img</Text>
+                  </View>
+                )}
+
+                {/* Title + price */}
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={{ fontSize: 16, fontWeight: "600" }}
+                    numberOfLines={1}
+                  >
+                    {item.title}
+                  </Text>
+                  {item.price != null && (
+                    <Text style={{ fontSize: 14, color: "#555", marginTop: 2 }}>
+                      ${Number(item.price).toFixed(2)}
+                    </Text>
+                  )}
+                </View>
+              </Pressable>
+            ))}
+          </View>
         )}
       </View>
 
@@ -216,7 +269,7 @@ export default function ProfileScreen() {
         </View>
       )}
 
-      {/* Username editor (simple inline modal-ish area) */}
+      {/* Username editor */}
       {editingUsername && (
         <View style={styles.editOverlay}>
           <View style={styles.editCard}>

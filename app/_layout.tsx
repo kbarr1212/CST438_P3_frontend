@@ -6,6 +6,7 @@ import { ActivityIndicator, View } from "react-native";
 import "react-native-reanimated";
 
 import { CartProvider } from "@/context/CartContext";
+import { FavoritesProvider } from "@/context/FavoritesContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { AuthProvider, useAuth } from "../hooks/useAuth";
 
@@ -52,14 +53,13 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      {/* AuthProvider now wraps the whole navigation tree */}
       <AuthProvider>
-        {/* your other providers (like CartProvider) can be nested inside */}
         <CartProvider>
-          <RootNavigation />
+          <FavoritesProvider>
+            <RootNavigation />
+          </FavoritesProvider>
         </CartProvider>
       </AuthProvider>
-
       <StatusBar style="auto" />
     </ThemeProvider>
   );
