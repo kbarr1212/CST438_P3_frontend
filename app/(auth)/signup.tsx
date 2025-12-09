@@ -116,19 +116,18 @@ useEffect(() => {
 
       // Map backend user -> AuthContext.User type
       const mappedUser = {
-        id: String(backendUser.id),                 // backend gives a number
+        id: String(backendUser.id), // backend gives a number
         email: backendUser.email,
         name: backendUser.username ?? backendUser.email,
       };
 
-      // 🔐 push into your existing auth state
+      // pushes into our existing auth state
       setUser(mappedUser);
       setUsername(mappedUser.name || "");
       setIsLoggedIn(true);
 
-      // 🚀 go to your main screen / profile
-      router.replace("/(tabs)/profile"); // or "/(tabs)/marketplace" if that's your home
-
+      // goes to our main screen / profile
+      router.replace("/(tabs)/profile"); 
     } catch (e) {
       console.error("GitHub login error:", e);
       setError("GitHub login error. Please try again.");

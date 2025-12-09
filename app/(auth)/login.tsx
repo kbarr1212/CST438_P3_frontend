@@ -173,7 +173,7 @@ export default function LoginScreen() {
 
         const backendUser = data; // backend returns the User directly
 
-        // 🔹 store full user
+        // stores full user
         setUser({
           id: String(backendUser.id),
           email: backendUser.email,
@@ -235,7 +235,7 @@ export default function LoginScreen() {
 
         const backendUser = data; // backend returns the User directly
 
-        // 🔹 store full user
+        // stores full user
         setUser({
           id: String(backendUser.id),
           email: backendUser.email,

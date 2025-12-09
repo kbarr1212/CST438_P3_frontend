@@ -8,9 +8,10 @@ import {
   Text,
   TextInput,
   View,
-  Platform,
+  Platform, 
+  StyleSheet
 } from "react-native";
-import { profileStyles as styles } from "../../components/ui/style";
+import { profileStyles } from "../../components/ui/style";
 import { useAuth } from "../../hooks/useAuth";
 import { useFavorites } from "@/context/FavoritesContext";
 
@@ -58,7 +59,7 @@ export default function ProfileScreen() {
     }
 
     try {
-      // TODO: call your backend to update username in DB
+      // TODO: we could call our backend to update username in DB
       setUsername(localUsername.trim());
       Alert.alert("Success", "Username updated.");
     } catch (e) {
@@ -71,7 +72,7 @@ export default function ProfileScreen() {
 
   const onSaveBio = async () => {
     try {
-      // TODO: call your backend to update bio
+      // TODO: another feature we can do is call our backend to update bio
       Alert.alert("Success", "Bio updated.");
     } catch (e) {
       console.error("Update bio error:", e);
@@ -124,10 +125,8 @@ const onDeleteAccount = () => {
         return;
       }
 
-      // ✅ Clear auth state
       await logout();
 
-      // ✅ Navigate back to login
       if (Platform.OS === "web") {
         alert("Account deleted. Redirecting to login.");
         router.replace("/(auth)/login");
@@ -396,7 +395,7 @@ const onDeleteAccount = () => {
   );
 }
 
-const styles = {
+const styles =  StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#0d1313",
@@ -662,4 +661,4 @@ const styles = {
     fontSize: 16,
     fontWeight: "bold",
   },
-};
+});
