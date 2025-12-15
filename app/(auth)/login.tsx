@@ -110,7 +110,7 @@ export default function LoginScreen() {
         const backendUser = JSON.parse(text);
         console.log("GitHub user from backend:", backendUser);
 
-        // 🔹 store full user in auth context
+        // stores full user in auth context
         setUser({
           id: String(backendUser.id),
           email: backendUser.email,
